@@ -1,0 +1,17 @@
+.DS_STORE
+*.DS_Store
+.ipynb_checkpoints
+data/external/*
+!data/external/.gitkeep
+data/features/*
+!data/features/.gitkeep
+data/figures/*
+!data/figures/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/submission/*
+!data/submission/.gitkeep
+models/*
+!models/.gitkeep
+
+
