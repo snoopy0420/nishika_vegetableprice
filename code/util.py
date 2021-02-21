@@ -98,9 +98,9 @@ class Submission:
         logger = Logger(dir_name)
         logger.info(f'{run_name} - start create submission')
 
-        submission = pd.read_csv(RAW_DATA_DIR_NAME + 'sample_submission.csv', header=None)
-        submission[1] = preds
-        submission.to_csv(SUB_DIR_NAME + f'{run_name}_submission.csv', index=False, header=False)
+        submission = pd.read_csv(RAW_DATA_DIR_NAME + 'sample_submission.csv')
+        submission.iloc[:, 1] = preds
+        submission.to_csv(SUB_DIR_NAME + f'{run_name}_submission.csv', index=False, header=True)
 
         logger.info(f'{run_name} - end create submission')
 
@@ -131,11 +131,30 @@ def load_index_k_fold(i_fold: int, train_x, n_splits=5, shuffle=True, random_sta
     """KFold
     """
     # 学習データ・バリデーションデータを分けるインデックスを返す
-    # train_y = self.load_y_train()
-
     dummy_x = np.zeros(len(train_x))
     kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
     return list(kf.split(dummy_x))[i_fold]
+
+
+def load_index_gk_fold(i_fold, train_x, cv_target_column, n_splits=5, shuffle=True, random_state=54) -> np.array:
+    """GroupKFold
+    """
+    # cv_target_column列により分割する
+    group_data = train_x[cv_target_column]
+    unique_group_data = group_data.unique()
+
+    kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+    tr_group_idx, va_group_idx = list(kf.split(unique_group_data))[i_fold]
+    # unique_group_dataをtrain/valid（学習に使うデータ、バリデーションデータ）に分割する
+    tr_groups, va_groups = unique_group_data.iloc[tr_group_idx], unique_group_data.iloc[va_group_idx]
+
+    # 各レコードのgroup_dataがtrain/validのどちらに属しているかによって分割する
+    is_tr = group_data.isin(tr_groups)
+    is_va = group_data.isin(va_groups)
+    tr_x, va_x = train_x[is_tr], train_x[is_va]
+
+    return np.array(tr_x.index), np.array(va_x.index)
+
 
 def load_stratify_or_group_target(self) -> pd.Series:
     """
@@ -157,12 +176,3 @@ def load_index_sk_fold(self, i_fold: int) -> np.array:
     return list(kf.split(dummy_x, stratify_data))[i_fold]
 
 
-def load_index_gk_fold(self, i_fold: int) -> np.array:
-    """GroupKFold
-    """
-    # 学習データ・バリデーションデータを分けるインデックスを返す
-    group_data = self.load_stratify_or_group_target()
-    train_y = self.load_y_train()
-    dummy_x = np.zeros(len(group_data))
-    kf = GroupKFold(n_splits=self.n_splits)
-    return list(kf.split(dummy_x, train_y, groups=group_data))[i_fold]

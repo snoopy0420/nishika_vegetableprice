@@ -9,6 +9,7 @@ from util import Logger
 
 import itertools
 from sklearn.preprocessing import LabelEncoder
+import re
 
 sys.path.append(os.pardir)
 sys.path.append('../..')
@@ -26,6 +27,71 @@ REMOVE_COLS = yml['SETTING']['REMOVE_COLS']
 
 
 #### preprocessing関数を定義 ##########################################################
+
+def base_preprocess(all_df):
+
+    # 値の種類が1種類以下のものを除外　
+    drop_cols = all_df.nunique()[all_df.nunique() <= 1].index
+    all_df = all_df.drop(columns=drop_cols)
+
+    # 最寄駅：距離（分）
+    d = {
+        "30分?60分": 45,
+        "1H?1H30": 75,
+        "2H?": 120,
+        "1H30?2H": 105,
+    }
+    all_df["最寄駅：距離（分）"] = all_df["最寄駅：距離（分）"].replace(d)
+    all_df["最寄駅：距離（分）"] = all_df["最寄駅：距離（分）"].astype(float)
+
+    # 面積
+    all_df.loc[:, '面積（㎡）'] = all_df["面積（㎡）"].replace({'2000㎡以上': "2000", "5000㎡以上": "5000"})
+    all_df.loc[:, '面積（㎡）'] = all_df["面積（㎡）"].astype(int)
+    all_df.loc[:, "面積_2000"] = all_df["面積（㎡）"] == 2000
+
+    # 建築年
+    d = {}
+    for val in all_df["建築年"].value_counts().keys():
+        if "平成" in val:
+            _year = int(val.split("平成")[1].split("年")[0])
+            year = 1988 + _year
+        if "昭和" in val:
+            _year = int(val.split("昭和")[1].split("年")[0])
+            year = 1925 + _year
+        if "令和" in val:
+            _year = int(val.split("令和")[1].split("年")[0])
+            year = 2018 + _year
+        d[val] = year
+    d["戦前"] = 1945
+    all_df.loc[:, "建築年"] = all_df["建築年"].replace(d)
+
+    # 取引時点
+    all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第１四半期', '.00', x))
+    all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第２四半期', '.25', x))
+    all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第３四半期', '.50', x))
+    all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第４四半期', '.75', x))
+    all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(float)
+
+    all_df.loc[:, "取引年"] = all_df["取引時点"].apply(round)
+
+    # ID化
+    cols = all_df.dtypes[(all_df.dtypes=="object") | (all_df.dtypes=="bool")].index
+    for col in cols:
+        all_df[col] = all_df[col].astype("category")
+    return all_df
+
+
+    return all_df
+
+
+def get_labelencoding(all_df):
+    cols = all_df.dtypes[(all_df.dtypes=="object") | (all_df.dtypes=="bool")].index
+    for col in cols:
+        le = LabelEncoder()
+        all_df.loc[:, col] = le.fit_transform(all_df[col])
+    return all_df
+
+
 
 # bininng
 def get_bins(all_df):
@@ -122,13 +188,6 @@ def get_freq_features(all_df):
         all_df.loc[:, "freq_{}".format(col)] = all_df[col].map(freq)
     return all_df
 
-def get_labelencoding(all_df):
-    cols = all_df.dtypes[(all_df.dtypes=="object") | (all_df.dtypes=="category")].index
-    for col in cols:
-        le = LabelEncoder()
-        all_df.loc[:, col] = le.fit_transform(all_df[col])
-    return all_df
-
 
 
 
@@ -138,16 +197,10 @@ def main():
     # データの読み込み
     train = pd.read_csv(RAW_DATA_DIR_NAME + 'train.csv')
     test = pd.read_csv(RAW_DATA_DIR_NAME + 'test.csv')
-    df = pd.concat([train, test], axis=0, sort=False).reset_index(drop=True)
+    all_df = pd.concat([train, test], axis=0, sort=False).reset_index(drop=True)
     
     # preprocessingの実行
-    df = get_bins(df)
-    df = get_cross_cate_features(df)
-    df = get_cross_num_features(df)
-    df = get_agg_features(df)
-    df = get_relative_features(df)
-    df = get_freq_features(df)
-    df = get_labelencoding(df)
+    df = base_preprocess(all_df)
     
     # trainとtestに分割
     train = df.iloc[:len(train), :]
@@ -163,10 +216,11 @@ def main():
     
     # 生成した特徴量のリスト
     features_list = list(df.drop(columns=REMOVE_COLS).columns)  # 学習に不要なカラムは除外
+    print(features_list)
     
     # 特徴量リストの保存
     # features_list = sorted(features_list)
-    with open(FEATURE_DIR_NAME + 'features_list.txt', 'wt') as f:
+    with open(FEATURE_DIR_NAME + 'features_list.txt', 'wt', encoding='utf-8') as f:
         for i in range(len(features_list)):
             f.write('\'' + str(features_list[i]) + '\',\n')
     

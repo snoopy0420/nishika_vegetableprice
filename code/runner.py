@@ -8,7 +8,7 @@ import shap
 import yaml
 from model import Model
 from tqdm import tqdm, tqdm_notebook
-from sklearn.metrics import log_loss, accuracy_score
+from sklearn.metrics import mean_absolute_error
 from typing import Callable, List, Optional, Tuple, Union
 from util import Logger, Util, optimized_f1, threshold_optimization
 from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold
@@ -31,7 +31,7 @@ class Runner:
         params: ハイパーパラメータ, cv: CVの設定,
         """
 
-        self.metrics = optimized_f1  # コンペの評価指標に応じて変更する
+        self.metrics = mean_absolute_error  # コンペの評価指標に応じて変更する
 
         self.run_name = run_name
         
@@ -80,17 +80,17 @@ class Runner:
     def train_fold(self, i_fold: Union[int, str], metrics=None) -> Tuple[Model, Optional[np.array], Optional[np.array], Optional[float]]:
         """foldを指定して学習・評価を行う
         他のメソッドから呼び出すほか、単体でも確認やパラメータ調整に用いる
-        :param i_fold: foldの番号（すべてのときには'all'とする）
+        :param i_fold: foldの番号（すべてのときには'all'とする）, metrics: 評価に用いる関数
         :return: （モデルのインスタンス、レコードのインデックス、予測値、評価によるスコア）のタプル
         """
         if metrics == None:
             metrics = self.metrics
 
         # 学習データの読込
-        validation = i_fold != 'all'
         train_x = self.train_x.copy()
         train_y = self.train_y.copy()
 
+        validation = i_fold != 'all'
         if validation:
 
             # 学習データ・バリデーションデータのindexを取得
@@ -98,8 +98,8 @@ class Runner:
                 tr_idx, va_idx = load_index_k_fold(i_fold, train_x, self.n_splits, self.shuffle, self.random_state)
             # elif self.cv_method == 'StratifiedKFold':
             #     tr_idx, va_idx = load_index_sk_fold(i_fold)
-            # elif self.cv_method == 'GroupKFold':
-            #     tr_idx, va_idx = load_index_gk_fold_shuffle(i_fold)
+            elif self.cv_method == 'GroupKFold':
+                tr_idx, va_idx = load_index_gk_fold(i_fold, train_x, self.cv_target_column, self.n_splits, self.shuffle, self.random_state)
             # elif self.cv_method == 'StratifiedGroupKFold':
             #     tr_idx, va_idx = self.load_index_sgk_fold(i_fold)
             # elif self.cv_method == 'TrainTestSplit':
@@ -149,7 +149,7 @@ class Runner:
         self.logger.info(f'{self.run_name} - start training cv')
         if self.cv_method == 'KFold':
             self.logger.info(f'{self.run_name} - cv method: {self.cv_method}')
-        else:
+        elif self.cv_method == 'GroupKFold':
             self.logger.info(f'{self.run_name} - cv method: {self.cv_method} - target: {self.cv_target_column}')
 
         scores = [] # 各foldのscoreを保存
@@ -276,12 +276,12 @@ class Runner:
         # 学習データの読込を行う
         df = pd.read_pickle(self.feature_dir_name + f'{self.train_file_name}')
 
-        # 特定の値を除外して学習させる場合 -------------
+        # 特定の行を除外して学習させる場合 
         # self.remove_train_index = df[(df['age']==64) | (df['age']==66) | (df['age']==67)].index
         # df = df.drop(index = self.remove_train_index)
-        # -----------------------------------------
 
-        df = df[self.features]
+        # 列名で抽出
+        df = df[self.features] #
 
         return df
 
@@ -294,9 +294,8 @@ class Runner:
         # 目的変数の読込を行う
         df = pd.read_pickle(self.feature_dir_name + f'{self.train_file_name}')
 
-        # 特定の値を除外して学習させる場合 -------------
+        # 特定の行を除外して学習させる場合 
         # train_y = train_y.drop(index = self.remove_train_index)
-        # -----------------------------------------
 
         return pd.Series(df[self.target])
 
@@ -305,8 +304,9 @@ class Runner:
         """テストデータの特徴量を読み込む
         :return: テストデータの特徴量
         """
+        # テストデータの読込
         df = pd.read_pickle(self.feature_dir_name + f'{self.test_file_name}')
-
+        # 列名で抽出
         df = df[self.features]
         
         return df
@@ -349,7 +349,7 @@ class Runner:
             for param in params.keys():
                 self.params[param] = params[param] # 実験するパラメータをセット
             i_fold = np.random.randint(0, 5) # foldの選択はランダムにする
-            model, va_idx, va_pred, score = self.train_fold(i_fold, metrics=log_loss) # 1foldで学習, 評価指標はloglossにした方が良い
+            model, va_idx, va_pred, score = self.train_fold(i_fold, metrics=self.metrics) # 1foldで学習
             self.logger.info(f'{self.run_name} - end hopt eval - score {score}')
 
             # 情報を記録しておく
@@ -410,7 +410,7 @@ class Runner:
 
     
     def get_target_encoding(self, tr_x, tr_y, va_x, cat_cols):
-        """target encoding
+        """学習データとバリデーションデータのtarget encodingを実行する
         """
         # 変数をループしてtarget encoding
         for c in cat_cols:
@@ -436,7 +436,7 @@ class Runner:
         return tr_x, va_x
 
     def get_test_target_enc(self, train_x, train_y, test_x, cat_cols):
-        """target encoding for test data
+        """テストデータのtarget encodingを実行する
         """
         for c in cat_cols:
             # テストデータを変換

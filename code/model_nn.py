@@ -33,7 +33,7 @@ with open(CONFIG_FILE, encoding="utf-8") as file:
     yml = yaml.load(file)
 FIGURE_DIR_NAME = yml['SETTING']['FIGURE_DIR_NAME']
 
-# 各foldのモデルを保存する配列
+# 各foldの学習過程を保存する配列
 hists = []
 
 class ModelNN(Model):
@@ -129,7 +129,7 @@ class ModelNN(Model):
         pred = self.model.predict_proba(te_x)
         return pred
 
-     # shapを計算するver
+     # shapを計算するver、うまくいかない
     def predict_and_shap(self, te_x, shap_sampling):
         explainer = shap.KernelExplainer(self.model.predict_proba, te_x[:shap_sampling])
         shap_values = explainer.shap_values(te_x[:shap_sampling])
