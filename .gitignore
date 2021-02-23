@@ -1,6 +1,7 @@
 .DS_STORE
 *.DS_Store
 .ipynb_checkpoints
+code/apartment_run.ipynb
 data/external/*
 !data/external/.gitkeep
 data/features/*
