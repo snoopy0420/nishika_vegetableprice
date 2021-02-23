@@ -240,7 +240,7 @@ def main():
     df = change_to_num(df)
     df = na_prep(df)
     df = madori_prep(df)
-    # df = get_labelencoding(df)
+    df = get_labelencoding(df)
     
     # trainとtestに分割
     train = df.iloc[:len(train), :]
