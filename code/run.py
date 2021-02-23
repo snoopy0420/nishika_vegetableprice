@@ -297,23 +297,38 @@ if __name__ == '__main__':
     # run_setting["hopt"] = "lgb_hopt"
 
     # モデルのパラメータ
+    # params = {
+    #   'boosting_type': 'gbdt',
+    #   "objective": 'regression',
+    #   "metric": "mae",
+    #   "learning_rate": 0.5,
+    #   'max_depth': 3,
+    #   "num_leaves": 31,
+    #   "bagging_fraction": 1.0,
+    #   "feature_fraction": 0.8,
+    #   "min_data_in_leaf": 20,
+    #   "reg_lambda": 5.0,
+    #   "reg_alpha": 0.0,
+    #   'random_state': 71,
+    #   'num_boost_round': 5000,
+    #   "verbose_eval": False,
+    #   'early_stopping_rounds': 100,
+    # }
+
     params = {
-      'boosting_type': 'gbdt',
-      "objective": 'regression',
-      "metric": "mae",
-      "learning_rate": 0.3,
-      'max_depth': 3,
-      "num_leaves": 31,
-      "bagging_fraction": 1.0,
-      "feature_fraction": 0.8,
-      "min_data_in_leaf": 20,
-      "reg_lambda": 5.0,
-      "reg_alpha": 0.0,
-      'random_state': 71,
-      'num_boost_round': 5000,
-      "verbose_eval": False,
-      'early_stopping_rounds': 100,
-    }
+        "boosting_type": "gbdt",
+        "objective": "regression",
+        "metric": "mae",
+        "learning_rate": 0.3,
+        "num_leaves": 31,
+        "colsample_bytree": 0.5,
+        "reg_lambda": 5,
+        "random_state": 71,
+        "num_boost_round": 5000,
+        "verbose_eval": False,
+        "early_stopping_rounds": 100
+    },
+
 
     runner = Runner(run_name, ModelLGB, features, params, file_setting, cv_setting, run_setting)
 
