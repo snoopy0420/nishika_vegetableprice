@@ -147,19 +147,11 @@ def get_run_info():
     """
     run_setting = {
         'target': TARGET,       # 目的変数
-        'calc_shap': True,     # shap値を計算するか否か
-        'save_train_pred': True,    # trainデータに対する予測値を保存するか否か,閾値の最適化に使用
+        'calc_shap': False,     # shap値を計算するか否か
+        'save_train_pred': False,    # trainデータに対する予測値を保存するか否か,閾値の最適化に使用
         "hopt": False,           # パラメータチューニングするか否か
-        "target_enc": False,     # target encoding をするか否か
-        "cat_cols": [
-            'workclass',
-            'education',
-            'marital-status',
-            'occupation',
-            'relationship', 
-            'bin_general',
-            ]
-
+        "target_enc": True,     # target encoding をするか否か
+        "cat_cols": "all"        # target encodingするカラムをリストで指定
     }
     return run_setting
 
@@ -171,25 +163,49 @@ if __name__ == '__main__':
  
     # 使用する特徴量の指定、features_list.txtからコピペ
     features = [
-        '市区町村コード',
-        '都道府県名',
-        '地区名',
-        '最寄駅：名称',
-        '最寄駅：距離（分）',
-        '間取り',
-        '面積（㎡）',
-        '建築年',
-        '建物の構造',
-        '用途',
-        '今後の利用目的',
-        '都市計画',
-        '建ぺい率（％）',
-        '容積率（％）',
-        '取引時点',
-        '改装',
-        '取引の事情等',
-        '面積_2000',
-        '取引年',
+'市区町村コード',
+'都道府県名',
+'地区名',
+'最寄駅：名称',
+'最寄駅：距離（分）',
+'間取り',
+'面積（㎡）',
+'建築年',
+'建物の構造',
+'用途',
+'今後の利用目的',
+'都市計画',
+'建ぺい率（％）',
+'容積率（％）',
+'取引時点',
+'改装',
+'取引の事情等',
+'面積_2000',
+'取引年',
+'取引四半期',
+'na_num',
+'地区名_isna',
+'最寄駅：名称_isna',
+'最寄駅：距離（分）_isna',
+'間取り_isna',
+'建築年_isna',
+'建物の構造_isna',
+'用途_isna',
+'今後の利用目的_isna',
+'都市計画_isna',
+'建ぺい率（％）_isna',
+'容積率（％）_isna',
+'改装_isna',
+'取引の事情等_isna',
+'L',
+'D',
+'K',
+'S',
+'R',
+'OpenFloor',
+'RoomNum',
+'TotalRoomNum',
+'RoomNumRatio',
     ]
 
     # # CV設定の読み込み
@@ -209,13 +225,14 @@ if __name__ == '__main__':
     # # 学習の設定を読み込む
     # run_setting = get_run_info()
     # # run_setting["hopt"] = "xgb_hopt"
+    # # run_setting["calc_shap"] = True
 
     # # xgbパラメータを設定する
     # params = {
     #     'booster': 'gbtree',
-    #     'objective': 'reg:linear',
+    #     'objective': 'reg:squarederror',
     #     "eval_metric": "mae",
-    #     'eta': 0.1,
+    #     'eta': 0.3,
     #     'gamma': 0.0,
     #     'alpha': 0.0,
     #     'lambda': 1.0,
@@ -224,7 +241,7 @@ if __name__ == '__main__':
     #     'subsample': 0.8,
     #     'colsample_bytree': 0.8,
     #     'random_state': 71,
-    #     'num_round': 5000,
+    #     'num_round': 1000,
     #     "verbose": False,
     #     'early_stopping_rounds': 100,
     # }
@@ -250,12 +267,11 @@ if __name__ == '__main__':
     # else:
     #     runner.run_train_cv()  # 学習
     #     ModelXGB.calc_feature_importance(dir_name, run_name, use_feature_name)  # feature_importanceを計算
+    #     ModelXGB.plot_learning_curve(run_name)  # learning curveを描画
     #     runner.run_predict_cv()  # 予測
 
     # # submissionファイルの作成
-    # # 今回は、出力が確率なのでラベルに変換
     # xgb_preds = Util.load_df_pickle(dir_name + f'{run_name}-pred.pkl')
-
     # Submission.create_submission(run_name, dir_name, xgb_preds)  # submit作成
 
     
@@ -279,7 +295,6 @@ if __name__ == '__main__':
     # 学習の設定を読み込む
     run_setting = get_run_info()
     # run_setting["hopt"] = "lgb_hopt"
-    run_setting["calc_shap"] = False
 
     # モデルのパラメータ
     params = {
@@ -287,9 +302,13 @@ if __name__ == '__main__':
       "objective": 'regression',
       "metric": "mae",
       "learning_rate": 0.3,
+      'max_depth': 3,
       "num_leaves": 31,
-      'colsample_bytree': .5,
-      "reg_lambda": 5,
+      "bagging_fraction": 1.0,
+      "feature_fraction": 0.8,
+      "min_data_in_leaf": 20,
+      "reg_lambda": 5.0,
+      "reg_alpha": 0.0,
       'random_state': 71,
       'num_boost_round': 5000,
       "verbose_eval": False,
@@ -316,6 +335,7 @@ if __name__ == '__main__':
     else:
         runner.run_train_cv()  # 学習
         ModelLGB.calc_feature_importance(dir_name, run_name, use_feature_name)  # feature_importanceを計算
+        ModelLGB.plot_learning_curve(run_name)  # learning curveを描画
         runner.run_predict_cv()  # 予測
 
     # submissionファイルの作成
@@ -342,7 +362,6 @@ if __name__ == '__main__':
 #     # 学習の設定を読み込む
 #     run_setting = get_run_info()
 #     run_setting["hopt"] = False
-#     run_setting["calc_shap"] =False
 
 #     # モデルのパラメータ
 #     params = {

@@ -16,6 +16,7 @@ FIGURE_DIR_NAME = yml['SETTING']['FIGURE_DIR_NAME']
 
 # 各foldのモデルを保存する配列
 model_array = []
+evals_array = []
 
 class ModelLGB(Model):
 
@@ -34,19 +35,27 @@ class ModelLGB(Model):
 
         # 学習
         if validation:
+            evals_result = {}
             early_stopping_rounds = params.pop('early_stopping_rounds')
             self.model = lgb.train(
                                 params,
                                 dtrain,
                                 num_boost_round=num_round,
                                 valid_sets=(dtrain, dvalid),
+                                valid_names=("train", "eval"),
                                 early_stopping_rounds=early_stopping_rounds,
-                                verbose_eval=verbose_eval
+                                verbose_eval=verbose_eval,
+                                evals_result=evals_result,
                                 )
             model_array.append(self.model)
+            evals_array.append(evals_result)
 
         else:
-            self.model = lgb.train(params, dtrain, num_boost_round=num_round)
+            self.model = lgb.train(
+                                params,
+                                dtrain,
+                                num_boost_round=num_round
+                                )
             model_array.append(self.model)
 
 
@@ -71,6 +80,30 @@ class ModelLGB(Model):
     def load_model(self, path):
         model_path = os.path.join(path, f'{self.run_fold_name}.model')
         self.model = Util.load(model_path)
+
+
+    @classmethod
+    def plot_learning_curve(self, run_name):
+        eval_metiric = "l1"
+        print(evals_array[0])
+
+        # 学習過程の可視化、foldが４以上の時のみ
+        fig, axes = plt.subplots(2, 2, figsize=(12,8))
+        plt.tick_params(labelsize=12) # 図のラベルのfontサイズ
+        plt.tight_layout()
+        plt.title('Learning curve')
+
+        for i, ax in enumerate(axes.ravel()):
+            ax.plot(evals_array[i]['train'][eval_metiric][10:], label="train")
+            ax.plot(evals_array[i]['eval'][eval_metiric][10:], label="valid")
+            ax.set_xlabel('epoch')
+            ax.set_ylabel(eval_metiric)
+            ax.legend()
+            ax.grid(True)
+
+        plt.savefig(FIGURE_DIR_NAME + run_name + '_lcurve.png', dpi=300, bbox_inches="tight")
+        plt.close()
+    
 
 
     @classmethod

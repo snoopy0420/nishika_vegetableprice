@@ -15,6 +15,11 @@ from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn.model_selection import KFold
 
+CONFIG_FILE = '../configs/config.yaml'
+with open(CONFIG_FILE, encoding="utf-8") as file:
+    yml = yaml.load(file)
+FIGURE_DIR_NAME = yml['SETTING']['FIGURE_DIR_NAME']
+
 
 # 定数
 shap_sampling = 10000
@@ -329,7 +334,7 @@ class Runner:
         labels = ax.get_xticklabels()
         plt.setp(labels, rotation=0, fontsize=10)
         ax.legend(loc = 'upper left')
-        plt.savefig(self.out_dir_name + self.run_name + '_shap.png', dpi=300, bbox_inches="tight")
+        plt.savefig(FIGURE_DIR_NAME + self.run_name + '_shap.png', dpi=300, bbox_inches="tight")
         plt.close()
 
 
@@ -374,7 +379,7 @@ class Runner:
                 'num_leaves': hp.quniform('num_leaves', 50, 200, 10),
                 'max_depth': hp.quniform('max_depth', 3, 10, 1),
                 'min_data_in_leaf': hp.quniform('min_data_in_leaf',  5, 25, 2),
-                'colsample_bytree': hp.uniform('colsample_bytree', 0.5, 1.0),
+                'feature_fraction': hp.uniform('feature_fraction', 0.5, 1.0),
                 'subsample': hp.uniform('subsample', 0.5, 1.0)  
             }
         elif self.hopt == "nn_hopt":
@@ -412,7 +417,11 @@ class Runner:
     def get_target_encoding(self, tr_x, tr_y, va_x, cat_cols):
         """学習データとバリデーションデータのtarget encodingを実行する
         """
+        if cat_cols == "all":
+            cat_cols = list(tr_x.dtypes[tr_x.dtypes=="object"].index)
+
         # 変数をループしてtarget encoding
+        print("target_encoding", cat_cols)
         for c in cat_cols:
             data_tmp = pd.DataFrame({c: tr_x[c], 'target': tr_y})
 
@@ -438,6 +447,9 @@ class Runner:
     def get_test_target_enc(self, train_x, train_y, test_x, cat_cols):
         """テストデータのtarget encodingを実行する
         """
+        if cat_cols == "all":
+            cat_cols = list(train_x.dtypes[train_x.dtypes=="object"].index)
+
         for c in cat_cols:
             # テストデータを変換
             data_tmp = pd.DataFrame({c: train_x[c], 'target': train_y})

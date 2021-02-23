@@ -28,7 +28,9 @@ REMOVE_COLS = yml['SETTING']['REMOVE_COLS']
 
 #### preprocessing関数を定義 ##########################################################
 
-def base_preprocess(all_df):
+def change_to_num(all_df):
+    """数値変数に変換
+    """
 
     # 値の種類が1種類以下のものを除外　
     drop_cols = all_df.nunique()[all_df.nunique() <= 1].index
@@ -66,29 +68,64 @@ def base_preprocess(all_df):
     all_df.loc[:, "建築年"] = all_df["建築年"].replace(d)
 
     # 取引時点
+    all_df["取引年"] = all_df["取引時点"].apply(lambda x : int(x[:4]) if type(x)==str else np.nan)
+    all_df["取引四半期"] = all_df["取引時点"].apply(lambda x : int(x[6]) if type(x)==str else np.nan)
+    
     all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第１四半期', '.00', x))
     all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第２四半期', '.25', x))
     all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第３四半期', '.50', x))
     all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(lambda x : re.sub('年第４四半期', '.75', x))
     all_df.loc[:, "取引時点"] = all_df["取引時点"].apply(float)
 
-    all_df.loc[:, "取引年"] = all_df["取引時点"].apply(round)
-
-    # ID化
-    cols = all_df.dtypes[(all_df.dtypes=="object") | (all_df.dtypes=="bool")].index
-    for col in cols:
-        all_df[col] = all_df[col].astype("category")
     return all_df
 
-
+def na_prep(all_df):
+    """欠損値の処理
+    """
+    
+    # 欠損値の数
+    all_df.loc[:, "na_num"] = all_df.isnull().sum(axis=1).values
+    
+    na_cols = list(all_df.isnull().sum()[all_df.isnull().sum()>0].index)
+    na_cols.remove("取引価格（総額）_log")
+    # 欠損かどうかを表す二値変数
+    for col in na_cols:
+        all_df.loc[:, "{}_isna".format(col)] = all_df[col].isnull()
+    
+    # 欠損値の補完
+    na_obj_col = all_df[na_cols].dtypes[all_df[na_cols].dtypes=="object"].index
+    na_num_col = set(na_cols) - set(na_obj_col)
+    for col in na_obj_col:
+        all_df.loc[:,col] = all_df[col].fillna(all_df[col].mode()[0])
+    for col in na_num_col:
+        all_df.loc[:,col] = all_df[col].fillna(all_df[col].mean())
+        
     return all_df
 
+def madori_prep(all_df):
+    """「間取り」の処理
+    """
+    all_df['L'] = all_df['間取り'].map(lambda x: 1 if 'Ｌ' in str(x) else 0)
+    all_df['D'] = all_df['間取り'].map(lambda x: 1 if 'Ｄ' in str(x) else 0)
+    all_df['K'] = all_df['間取り'].map(lambda x: 1 if 'Ｋ' in str(x) else 0)
+    all_df['S'] = all_df['間取り'].map(lambda x: 1 if 'Ｓ' in str(x) else 0)
+    all_df['R'] = all_df['間取り'].map(lambda x: 1 if 'Ｒ' in str(x) else 0)
+    all_df['OpenFloor'] = all_df['間取り'].map(lambda x: 1 if 'オープンフロア' in str(x) else 0)
+    all_df['RoomNum'] = all_df['間取り'].map(lambda x: re.sub("\\D", "", str(x)))
+    all_df.loc[:,'RoomNum'] = all_df['RoomNum'].map(lambda x:int(x) if x!='' else 0)
+    all_df['TotalRoomNum'] = all_df[['L', 'D', 'K', 'S', 'R', 'RoomNum']].sum(axis=1)
+    all_df['RoomNumRatio'] = all_df['RoomNum'] / all_df['TotalRoomNum']   
+    
+    return all_df
 
+# ラベルエンコーディング
 def get_labelencoding(all_df):
-    cols = all_df.dtypes[(all_df.dtypes=="object") | (all_df.dtypes=="bool")].index
+    cols = all_df.dtypes[all_df.dtypes=="object"].index
     for col in cols:
+        all_df.loc[:, col] = all_df[col].fillna("NaN")
         le = LabelEncoder()
         all_df.loc[:, col] = le.fit_transform(all_df[col])
+
     return all_df
 
 
@@ -197,10 +234,13 @@ def main():
     # データの読み込み
     train = pd.read_csv(RAW_DATA_DIR_NAME + 'train.csv')
     test = pd.read_csv(RAW_DATA_DIR_NAME + 'test.csv')
-    all_df = pd.concat([train, test], axis=0, sort=False).reset_index(drop=True)
+    df = pd.concat([train, test], axis=0, sort=False).reset_index(drop=True)
     
     # preprocessingの実行
-    df = base_preprocess(all_df)
+    df = change_to_num(df)
+    df = na_prep(df)
+    df = madori_prep(df)
+    # df = get_labelencoding(df)
     
     # trainとtestに分割
     train = df.iloc[:len(train), :]

@@ -99,7 +99,7 @@ class Submission:
         logger.info(f'{run_name} - start create submission')
 
         submission = pd.read_csv(RAW_DATA_DIR_NAME + 'sample_submission.csv')
-        submission.iloc[:, 1] = preds
+        submission.iloc[:, 1] = preds.iloc[:, 0]
         submission.to_csv(SUB_DIR_NAME + f'{run_name}_submission.csv', index=False, header=True)
 
         logger.info(f'{run_name} - end create submission')
