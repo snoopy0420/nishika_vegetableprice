@@ -327,7 +327,7 @@ if __name__ == '__main__':
         "num_boost_round": 5000,
         "verbose_eval": False,
         "early_stopping_rounds": 100
-    },
+    }
 
 
     runner = Runner(run_name, ModelLGB, features, params, file_setting, cv_setting, run_setting)
