@@ -7,3 +7,5 @@ seaborn
 scikit-learn
 tensorflow
 xgboost
+matplotlib
+japanize_matplotlib

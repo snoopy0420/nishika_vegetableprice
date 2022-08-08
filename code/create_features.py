@@ -28,6 +28,8 @@ REMOVE_COLS = yml['SETTING']['REMOVE_COLS']
 
 #### preprocessing関数を定義 ##########################################################
 
+#all_dfを受け取りall_dfを返す関数
+
 def change_to_num(all_df):
     """数値変数に変換
     """
@@ -129,9 +131,9 @@ def get_labelencoding(all_df):
     return all_df
 
 
-
-# bininng
 def get_bins(all_df):
+    """binning
+    """
     # bin_edges = [-1, 25, 45, np.inf]
     # all_df["bin_age"] = pd.cut(all_df["age"], bins=bin_edges, labels=["young", "middle", "senior"]).astype("object")
     bin_edges = [-1, 20, 30, 40, 50, 60, np.inf]
@@ -139,6 +141,8 @@ def get_bins(all_df):
     return all_df
 
 def get_cross_cate_features(all_df):
+    """カテゴリ変数×カテゴリ変数
+    """
     obj_cols = [
         'workclass',
         'education',
@@ -156,11 +160,15 @@ def get_cross_cate_features(all_df):
     return all_df
 
 def get_cross_num_features(all_df):
+    """数値変数×数値変数
+    """
     all_df["prod_age_educationnum"] = all_df["age"] * all_df["education-num"]
     all_df["ratio_age_educationnum"] = all_df["age"] / all_df["education-num"]
     return all_df
 
 def get_agg_features(all_df):
+    """集約特徴量
+    """
     cate_cols = [
         "workclass",
         "education",
@@ -186,6 +194,8 @@ def get_agg_features(all_df):
     return all_df
 
 def get_relative_features(all_df):
+    """相対値
+    """
     cate_cols = [
         "workclass",
         "education",
@@ -209,6 +219,8 @@ def get_relative_features(all_df):
     return all_df
 
 def get_freq_features(all_df):
+    """frequency encoding
+    """
     cate_cols = [
         "workclass",
         "education",
