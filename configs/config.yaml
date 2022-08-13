@@ -4,5 +4,5 @@ SETTING:
   RAW_DATA_DIR_NAME: '../data/raw/' # オリジナルデータの格納先ディレクトリ
   FEATURE_DIR_NAME: '../data/features/' # オリジナルデータ
   FIGURE_DIR_NAME: "../data/figures/" # 図表の保存先ディレクトリ
-  TARGET: "取引価格（総額）_log" # 目的変数
-  REMOVE_COLS: ['取引価格（総額）_log',"市区町村名","ID"] # 削除するカラム
+  TARGET: "mode_price" # 目的変数
+  #REMOVE_COLS: ['取引価格（総額）_log',"市区町村名","ID"] # 削除するカラム
