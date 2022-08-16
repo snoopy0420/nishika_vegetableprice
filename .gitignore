@@ -14,6 +14,3 @@ data/submission/*
 !data/submission/.gitkeep
 models/*
 !models/.gitkeep
-
-
-
