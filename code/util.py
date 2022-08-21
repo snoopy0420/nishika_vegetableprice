@@ -13,7 +13,7 @@ from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold
 CONFIG_FILE = '../configs/config.yaml'
 
 with open(CONFIG_FILE, encoding="utf-8") as file:
-    yml = yaml.load(file)
+    yml = yaml.safe_load(file)
 RAW_DATA_DIR_NAME = yml['SETTING']['RAW_DATA_DIR_NAME']
 SUB_DIR_NAME = yml['SETTING']['SUB_DIR_NAME']
 

@@ -15,9 +15,10 @@ from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn.model_selection import KFold
 
+
 CONFIG_FILE = '../configs/config.yaml'
 with open(CONFIG_FILE, encoding="utf-8") as file:
-    yml = yaml.load(file)
+    yml = yaml.safe_load(file)
 FIGURE_DIR_NAME = yml['SETTING']['FIGURE_DIR_NAME']
 
 
@@ -279,6 +280,7 @@ class Runner:
         :return: 学習データの特徴量
         """
         # 学習データの読込を行う
+        import pickle5
         df = pd.read_pickle(self.feature_dir_name + f'{self.train_file_name}')
 
         # 特定の行を除外して学習させる場合 

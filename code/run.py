@@ -30,7 +30,7 @@ warnings.simplefilter('ignore')
 # configの読み込み
 CONFIG_FILE = '../configs/config.yaml'
 with open(CONFIG_FILE, encoding="utf-8") as file:
-    yml = yaml.load(file)
+    yml = yaml.safe_load(file)
 MODEL_DIR_NAME = yml['SETTING']['MODEL_DIR_NAME']
 FEATURE_DIR_NAME = yml['SETTING']['FEATURE_DIR_NAME']
 TARGET = yml['SETTING']['TARGET']
@@ -74,7 +74,7 @@ def my_makedirs_remove(path):
 
 def save_model_config(key_list, value_list, dir_name, run_name):
     """実装詳細を管理する
-    どんな 特徴量/パラメータ/cv/setting/ で学習させたモデルかを管理するjsonファイルを出力する
+    どんな「特徴量/パラメータ/cv/setting/」で学習させたモデルかを管理するjsonファイルを出力する
     """
     def set_default(obj):
         """json出力の際にset型のオブジェクトをリストに変更する
@@ -93,16 +93,16 @@ def save_model_config(key_list, value_list, dir_name, run_name):
     json.dump(conf_dict, json_file, indent=4, default=set_default, ensure_ascii=False)
 
 
-# get label
-# preds.pklに保存されているのは確率であるため、閾値の最適化後にラベルに変換
 def get_label(train_y, train_preds, preds):
+    """preds.pklに保存されている確率を閾値の最適化後にラベルに変換
+    """
     bt = threshold_optimization(train_y, train_preds, optimized_f1)
     print(f"Best Threshold is {bt}")
     labels = preds >= bt
     return np.array(labels, dtype="int32")
 
     
-# 以下で諸々の設定をする
+########### 以下で諸々の設定をする###############
 
 def get_cv_info(random_state=42) -> dict:
     """CVの設定
@@ -111,7 +111,7 @@ def get_cv_info(random_state=42) -> dict:
     # CVしない場合（全データで学習させる場合）はmethodに'None'を設定
     # StratifiedKFold or GroupKFold or StratifiedGroupKFold の場合はcv_target_gr, cv_target_sfに対象カラム名を設定する
     cv_setting = {
-        'method': 'KFold',
+        'method': 'None',
         'n_splits': 5,
         'random_state': random_state,
         'shuffle': True,
@@ -148,9 +148,9 @@ def get_run_info():
     run_setting = {
         'target': TARGET,       # 目的変数
         'calc_shap': False,     # shap値を計算するか否か
-        'save_train_pred': False,    # trainデータに対する予測値を保存するか否か,閾値の最適化に使用
+        'save_train_pred': False,    # trainデータに対する予測値を保存するか否か(閾値の最適化に使用)
         "hopt": False,           # パラメータチューニングするか否か
-        "target_enc": True,     # target encoding をするか否か
+        "target_enc": False,     # target encoding をするか否か
         "cat_cols": "all"        # target encodingするカラムをリストで指定
     }
     return run_setting
@@ -163,49 +163,27 @@ if __name__ == '__main__':
  
     # 使用する特徴量の指定、features_list.txtからコピペ
     features = [
-'市区町村コード',
-'都道府県名',
-'地区名',
-'最寄駅：名称',
-'最寄駅：距離（分）',
-'間取り',
-'面積（㎡）',
-'建築年',
-'建物の構造',
-'用途',
-'今後の利用目的',
-'都市計画',
-'建ぺい率（％）',
-'容積率（％）',
-'取引時点',
-'改装',
-'取引の事情等',
-'面積_2000',
-'取引年',
-'取引四半期',
-'na_num',
-'地区名_isna',
-'最寄駅：名称_isna',
-'最寄駅：距離（分）_isna',
-'間取り_isna',
-'建築年_isna',
-'建物の構造_isna',
-'用途_isna',
-'今後の利用目的_isna',
-'都市計画_isna',
-'建ぺい率（％）_isna',
-'容積率（％）_isna',
-'改装_isna',
-'取引の事情等_isna',
-'L',
-'D',
-'K',
-'S',
-'R',
-'OpenFloor',
-'RoomNum',
-'TotalRoomNum',
-'RoomNumRatio',
+'kind',
+'date',
+'amount',
+'mode_price',
+'area',
+'mean_temp',
+'max_temp',
+'min_temp',
+'sum_rain',
+'sun_time',
+'mean_humid',
+'mode_price_31prev',
+'amount_31prev',
+'mean_temp_31prev',
+'max_temp_31prev',
+'max_temp_time_31prev',
+'min_temp_31prev',
+'min_temp_time_31prev',
+'sum_rain_31prev',
+'sun_time_31prev',
+'mean_humid_31prev',
     ]
 
     # # CV設定の読み込み
@@ -296,24 +274,6 @@ if __name__ == '__main__':
     run_setting = get_run_info()
     # run_setting["hopt"] = "lgb_hopt"
 
-    # モデルのパラメータ
-    # params = {
-    #   'boosting_type': 'gbdt',
-    #   "objective": 'regression',
-    #   "metric": "mae",
-    #   "learning_rate": 0.5,
-    #   'max_depth': 3,
-    #   "num_leaves": 31,
-    #   "bagging_fraction": 1.0,
-    #   "feature_fraction": 0.8,
-    #   "min_data_in_leaf": 20,
-    #   "reg_lambda": 5.0,
-    #   "reg_alpha": 0.0,
-    #   'random_state': 71,
-    #   'num_boost_round': 5000,
-    #   "verbose_eval": False,
-    #   'early_stopping_rounds': 100,
-    # }
 
     params = {
         "boosting_type": "gbdt",

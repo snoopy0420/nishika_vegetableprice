@@ -30,7 +30,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 CONFIG_FILE = '../configs/config.yaml'
 with open(CONFIG_FILE, encoding="utf-8") as file:
-    yml = yaml.load(file)
+    yml = yaml.safe_load(file)
 FIGURE_DIR_NAME = yml['SETTING']['FIGURE_DIR_NAME']
 
 # 各foldの学習過程を保存する配列
