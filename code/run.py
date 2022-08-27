@@ -8,7 +8,7 @@ import collections as cl
 import warnings
 from model_lgb import ModelLGB
 from model_xgb import ModelXGB
-from model_nn import ModelNN
+#from model_nn import ModelNN
 from runner import Runner
 from util import Submission, Util, threshold_optimization, optimized_f1
 import pandas as pd
