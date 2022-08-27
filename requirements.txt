@@ -6,6 +6,8 @@ scipy
 seaborn
 scikit-learn
 tensorflow
+keras
+hyperopt
 xgboost
 matplotlib
 japanize_matplotlib

@@ -280,7 +280,6 @@ class Runner:
         :return: 学習データの特徴量
         """
         # 学習データの読込を行う
-        import pickle5
         df = pd.read_pickle(self.feature_dir_name + f'{self.train_file_name}')
 
         # 特定の行を除外して学習させる場合 
