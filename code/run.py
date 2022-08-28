@@ -164,9 +164,6 @@ if __name__ == '__main__':
     # 使用する特徴量の指定、features_list.txtからコピペ、適宜取捨選択
     features = [
 'kind',
-'date',
-'amount',
-'mode_price',
 'area',
 'mean_temp',
 'max_temp',
