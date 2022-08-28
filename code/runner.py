@@ -281,6 +281,7 @@ class Runner:
         """
         # 学習データの読込を行う
         df = pd.read_pickle(self.feature_dir_name + f'{self.train_file_name}')
+        df.head()
 
         # 特定の行を除外して学習させる場合 
         # self.remove_train_index = df[(df['age']==64) | (df['age']==66) | (df['age']==67)].index
