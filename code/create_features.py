@@ -202,6 +202,7 @@ def main():
 
     print("train shape: ", train.shape)
     print("test shape: ", test.shape)
+    print("df.dtypes: ", df.dtypes)
     
     # pickleファイルとして保存
     train.to_pickle(FEATURE_DIR_NAME + 'train.pkl')
@@ -212,7 +213,6 @@ def main():
     features_list = list(df.columns)
     if 'REMOVE_COLS' in yml['SETTING'].keys():
         features_list = list(df.drop(columns=REMOVE_COLS).columns)  # 学習に不要なカラムは除外
-    
     print(features_list)
     
     # 特徴量リストの保存
