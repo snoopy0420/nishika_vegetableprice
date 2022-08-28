@@ -35,7 +35,7 @@ if 'REMOVE_COLS' in yml['SETTING'].keys():
 def change_to_date(all_df):
     """datetimeに変換
     """
-    if all_df["date"][0]==20041106:
+    if (all_df["date"][0]==20041106):
         for i in ("date", "max_temp_time", "min_temp_time"):
             all_df.loc[:, i] = pd.to_datetime(all_df[i], format="%Y/%m/%d %H:%M")
     else:
@@ -188,12 +188,15 @@ def main():
     # データの読み込み
     train = pd.read_csv(RAW_DATA_DIR_NAME + 'train.csv')
     test = pd.read_csv(RAW_DATA_DIR_NAME + 'test.csv')
-    wea = pd.read_csv(RAW_DATA_DIR_NAME+"weather.csv")
-    df = pd.concat([train, test], axis=0, sort=False).reset_index(drop=True)
+    wea = pd.read_csv(RAW_DATA_DIR_NAME + "weather.csv")
+    train = change_to_date(train)
+    test = change_to_date(test)
+    wea = change_to_date(wea)
+    df = pd.concat([train, test])
     
     # preprocessingの実行
-    df = change_to_date(df)
-    wea = change_to_date(wea)
+    #df = change_to_date(df)
+    #Swea = change_to_date(wea)
     df = merge_wea(df,wea)
     df = get_lag_feat(df,wea,31)
     df = get_labelencoding(df)
