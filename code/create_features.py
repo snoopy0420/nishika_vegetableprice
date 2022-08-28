@@ -25,7 +25,7 @@ RAW_DATA_DIR_NAME = yml['SETTING']['RAW_DATA_DIR_NAME']  # RAWデータ格納場
 FEATURE_DIR_NAME = yml['SETTING']['FEATURE_DIR_NAME']  # 生成した特徴量の出力場所
 MODEL_DIR_NAME = yml['SETTING']['MODEL_DIR_NAME'] # モデルの格納場所
 if 'REMOVE_COLS' in yml['SETTING'].keys():
-    REMOVE_COLS = yml['SETTING']['REMOVE_COLS']['REMOVE_COLS']
+    REMOVE_COLS = yml['SETTING']['REMOVE_COLS']
 
 
 #### preprocessing関数を定義 ##########################################################
