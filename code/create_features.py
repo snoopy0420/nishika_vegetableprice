@@ -36,7 +36,7 @@ def change_to_date(all_df):
     """datetimeに変換
     """
     all_df["date"] = pd.to_datetime(all_df["date"], format="%Y%m%d")
-    if all_df["date"][0]==20041106:
+    if (all_df["date"][0]==20041106):
         for i in ("max_temp_time", "min_temp_time"):
             all_df[i] = pd.C(all_df[i], format="%Y/%m/%d %H:%M")
             
@@ -187,7 +187,7 @@ def main():
     train = pd.read_csv(RAW_DATA_DIR_NAME + 'train.csv')
     test = pd.read_csv(RAW_DATA_DIR_NAME + 'test.csv')
     wea = pd.read_csv(RAW_DATA_DIR_NAME + "weather.csv")
-    df = pd.concat([train, test])
+    df = pd.concat([train, test], ignore_index=True)
     
     # preprocessingの実行
     df = change_to_date(df)
