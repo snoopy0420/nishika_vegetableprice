@@ -35,12 +35,11 @@ if 'REMOVE_COLS' in yml['SETTING'].keys():
 def change_to_date(all_df):
     """datetimeに変換
     """
-    if (all_df["date"][0]==20041106):
-        for i in ("date", "max_temp_time", "min_temp_time"):
-            all_df.loc[:, i] = pd.to_datetime(all_df[i], format="%Y/%m/%d %H:%M")
-    else:
-        all_df["date"] = pd.to_datetime(all_df["date"], format="%Y%m%d")
-
+    all_df["date"] = pd.to_datetime(all_df["date"], format="%Y%m%d")
+    if all_df["date"][0]==20041106:
+        for i in ("max_temp_time", "min_temp_time"):
+            all_df[i] = pd.C(all_df[i], format="%Y/%m/%d %H:%M")
+            
     return all_df
 
 
@@ -110,10 +109,11 @@ def merge_wea(all_df, wea_df):
         base_tmp_df["date"] = date.to_list()
         area_pair_dfs.append(base_tmp_df)
 
-    area_pair_df = pd.concat(area_pair_dfs)
-    all_df = pd.merge(all_df, area_pair_df, on=['date', 'area'], how='left')
+    wea_df = pd.concat(area_pair_dfs)
+    
+    all_df = pd.merge(all_df, wea_df, on=['date', 'area'], how='left')
 
-    return all_df
+    return all_df, wea_df
 
 
 def add_may(wea_df):
@@ -156,14 +156,13 @@ def get_lag_feat(all_df, wea_df, nshift):
 
     cols = [i for i in wea_df.columns if i not in ("area","date")]
     for value in cols:
-        
         df_wide = wea_df.pivot(index="date",columns="area",values=value)
         df_wide_lag = df_wide.shift(nshift)
         df_long_lag = df_wide_lag.stack().reset_index()
         df_long_lag.columns = ["date", "area", "{}_{}prev".format(value,nshift)]
-        
+
         all_df = pd.merge(all_df, df_long_lag, on=['date', 'area'], how='left')
-        
+
     return all_df
 
 
@@ -181,7 +180,6 @@ def get_labelencoding(all_df):
 
 
 
-
 ##### main関数を定義 ###########################################################################
 def main():
     
@@ -189,15 +187,12 @@ def main():
     train = pd.read_csv(RAW_DATA_DIR_NAME + 'train.csv')
     test = pd.read_csv(RAW_DATA_DIR_NAME + 'test.csv')
     wea = pd.read_csv(RAW_DATA_DIR_NAME + "weather.csv")
-    train = change_to_date(train)
-    test = change_to_date(test)
-    wea = change_to_date(wea)
     df = pd.concat([train, test])
     
     # preprocessingの実行
-    #df = change_to_date(df)
-    #Swea = change_to_date(wea)
-    df = merge_wea(df,wea)
+    df = change_to_date(df)
+    wea = change_to_date(wea)
+    df,wea = merge_wea(df,wea)
     df = get_lag_feat(df,wea,31)
     df = get_labelencoding(df)
     
