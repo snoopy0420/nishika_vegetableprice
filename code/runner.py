@@ -32,9 +32,12 @@ class Runner:
                  features: List[str], params: dict, file_setting: dict,
                  cv_setting: dict, run_setting: dict):
         """コンストラクタ
-        run_name: runの名前, model_cls: モデルのクラス,
-        features: 特徴量のリスト, setting: 設定リスト,
-        params: ハイパーパラメータ, cv: CVの設定,
+        run_name: runの名前, 
+        model_cls: モデルのクラス,
+        features: 特徴量のリスト, 
+        setting: 設定リスト,
+        params: ハイパーパラメータ,
+        cv: CVの設定,
         """
 
         self.metrics = mean_absolute_error  # コンペの評価指標に応じて変更する
@@ -110,8 +113,8 @@ class Runner:
             #     tr_idx, va_idx = self.load_index_sgk_fold(i_fold)
             # elif self.cv_method == 'TrainTestSplit':
             #     tr_idx, va_idx = self.load_index_train_test_split()
-            # elif self.cv_method == 'CustomTimeSeriesSplitter':
-            #     tr_idx, va_idx = self.load_index_custom_ts_fold(i_fold)
+            elif self.cv_method == 'CustomTimeSeriesSplitter':
+                tr_idx, va_idx = self.load_index_custom_ts_fold(i_fold)
             else:
                 print('CVメソッドが正しくないため終了します')
                 sys.exit(0)

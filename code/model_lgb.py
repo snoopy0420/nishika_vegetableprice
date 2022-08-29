@@ -54,7 +54,7 @@ class ModelLGB(Model):
             self.model = lgb.train(
                                 params,
                                 dtrain,
-                                num_boost_round=num_round
+                                # num_boost_round=num_round
                                 )
             model_array.append(self.model)
 
