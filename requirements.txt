@@ -1,3 +1,4 @@
+python==3.7.13
 numpy
 pandas
 tqdm
@@ -11,3 +12,4 @@ hyperopt
 xgboost
 matplotlib
 japanize_matplotlib
+shap

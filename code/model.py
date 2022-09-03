@@ -5,11 +5,15 @@ from typing import Optional
 
 
 class Model(metaclass=ABCMeta):
+    """
+    model_xxのスーパークラス
+    abcモジュールにより抽象メソッドを定義
+    """
 
     def __init__(self, run_fold_name: str, params: dict) -> None:
         """コンストラクタ
-        :param run_fold_name: ランの名前とfoldの番号を組み合わせた名前
-        :param params: ハイパーパラメータ
+        run_fold_name: runの名前とfoldの番号を組み合わせた名前
+        params: ハイパーパラメータ
         """
         self.run_fold_name = run_fold_name
         self.params = params
@@ -20,10 +24,10 @@ class Model(metaclass=ABCMeta):
                 va_x: Optional[pd.DataFrame] = None,
                 va_y: Optional[pd.Series] = None) -> None:
         """モデルの学習を行い、学習済のモデルを保存する
-        :param tr_x: 学習データの特徴量
-        :param tr_y: 学習データの目的変数
-        :param va_x: バリデーションデータの特徴量
-        :param va_y: バリデーションデータの目的変数
+        tr_x: 学習データの特徴量
+        tr_y: 学習データの目的変数
+        va_x: バリデーションデータの特徴量
+        va_y: バリデーションデータの目的変数
         """
         pass
 

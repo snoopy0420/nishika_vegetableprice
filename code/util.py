@@ -177,9 +177,17 @@ def load_index_sk_fold(self, i_fold: int) -> np.array:
     kf = StratifiedKFold(n_splits=self.n_splits, shuffle=self.shuffle, random_state=self.random_state)
     return list(kf.split(dummy_x, stratify_data))[i_fold]
 
+
 def load_index_custom_ts_fold(i_fold, train_x) -> np.array:
+    """timeseries cv
+    """
 
     tr_x = train_x[(train_x["year"]!=2021)|((train_x["year"]==2021)&(train_x["month"]<5-i_fold))]
     va_x = train_x[(train_x["year"]==2021)&(train_x["month"]==5-i_fold)]
 
     return np.array(tr_x.index), np.array(va_x.index)
+
+# from sklearn.metrics import mean_absolute_error
+# def my_metric(param):
+#     met = mean_absolute_error(param)
+#     return met

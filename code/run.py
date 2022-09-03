@@ -102,7 +102,7 @@ def get_label(train_y, train_preds, preds):
     return np.array(labels, dtype="int32")
 
     
-########### 以下で諸々の設定をする###############
+########### 以下で諸々の設定をする############################################
 
 def get_cv_info(random_state=42) -> dict:
     """CVの設定
@@ -113,7 +113,7 @@ def get_cv_info(random_state=42) -> dict:
     cv_setting = {
         'method': 'CustomTimeSeriesSplitter',
         'n_splits': 5,
-        'random_state': random_state,
+        'random_state': 123,
         'shuffle': True,
         'cv_target': None
     }
@@ -149,7 +149,7 @@ def get_run_info():
         'target': TARGET,       # 目的変数
         'calc_shap': False,     # shap値を計算するか否か
         'save_train_pred': False,    # trainデータに対する予測値を保存するか否か(閾値の最適化に使用)
-        "hopt": False,           # パラメータチューニングするか否か
+        "hopt": "lgb_hopt",           # パラメータチューニング、lgb_hopt,xgb_hopt,nn_hopt,False
         "target_enc": False,     # target encoding をするか否か
         "cat_cols": "all"        # target encodingするカラムをリストで指定
     }
@@ -159,9 +159,9 @@ def get_run_info():
 if __name__ == '__main__':
 
     
-##### 学習・推論 xgboost ###################################
- 
-    # 使用する特徴量の指定、features_list.txtからコピペ、適宜取捨選択
+######## 学習・推論 ##################################
+    # 使用する特徴量の指定
+    # features_list.txtからコピペ、適宜取捨選択
     features = [
 'kind',
 'area',
@@ -184,6 +184,11 @@ if __name__ == '__main__':
 'month',
 'day',
     ]
+
+######## xgboost ###################################
+ 
+    # # 特徴量
+    # xgb_features = features
 
     # # CV設定の読み込み
     # cv_setting = get_cv_info()
@@ -224,7 +229,7 @@ if __name__ == '__main__':
     # }
 
     # # インスタンス生成
-    # runner = Runner(run_name, ModelXGB, features, params, file_setting, cv_setting, run_setting)
+    # runner = Runner(run_name, ModelXGB, xgb_features, params, file_setting, cv_setting, run_setting)
 
     # # 今回の学習で使用した特徴量名を取得
     # use_feature_name = runner.get_feature_name() 
@@ -253,9 +258,9 @@ if __name__ == '__main__':
 
     
 
-##### 学習・推論 LightGBM #############################################################
+##### LightGBM #############################################################
 
-    features = features
+    lgb_features = features
 
     # CV設定の読み込み
     cv_setting = get_cv_info(random_state=86)
@@ -280,16 +285,19 @@ if __name__ == '__main__':
         "metric": "mae",
         "learning_rate": 0.3,
         "num_leaves": 31,
-        "colsample_bytree": 0.5,
+        "colsample_bytree": 0.5, # feature_fraction
         "reg_lambda": 5,
         "random_state": 71,
         "num_boost_round": 5000,
         "verbose_eval": False,
-        "early_stopping_rounds": 100
+        "early_stopping_rounds": 100,
+        'max_depth': 3,
+        "min_data_in_leaf": 20,
+        "num_leaves": 31,
     }
 
 
-    runner = Runner(run_name, ModelLGB, features, params, file_setting, cv_setting, run_setting)
+    runner = Runner(run_name, ModelLGB, lgb_features, params, file_setting, cv_setting, run_setting)
 
     # 今回の学習で使用した特徴量名を取得
     use_feature_name = runner.get_feature_name() 
@@ -319,7 +327,7 @@ if __name__ == '__main__':
 
 # ##### ニューラルネットワーク ###########################################################
 
-#     features = features
+#     nn_features = features
 
 #     # CV設定の読み込み
 #     cv_setting = get_cv_info(random_state=53)
@@ -370,7 +378,7 @@ if __name__ == '__main__':
 #     #     "batch_size": 64.0
 #     # }
 
-#     runner = Runner(run_name, ModelNN, features, params, file_setting, cv_setting, run_setting)
+#     runner = Runner(run_name, ModelNN, nn_features, params, file_setting, cv_setting, run_setting)
 
 #     # 今回の学習で使用した特徴量名を取得
 #     use_feature_name = runner.get_feature_name() 
