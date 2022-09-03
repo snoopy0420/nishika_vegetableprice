@@ -111,7 +111,7 @@ def get_cv_info(random_state=42) -> dict:
     # CVしない場合（全データで学習させる場合）はmethodに'None'を設定
     # StratifiedKFold or GroupKFold or StratifiedGroupKFold の場合はcv_target_gr, cv_target_sfに対象カラム名を設定する
     cv_setting = {
-        'method': 'None',
+        'method': 'CustomTimeSeriesSplitter',
         'n_splits': 5,
         'random_state': random_state,
         'shuffle': True,
@@ -179,6 +179,10 @@ if __name__ == '__main__':
 'sum_rain_31prev',
 'sun_time_31prev',
 'mean_humid_31prev',
+'weekday',
+'year',
+'month',
+'day',
     ]
 
     # # CV設定の読み込み

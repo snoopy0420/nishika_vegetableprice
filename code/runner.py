@@ -11,7 +11,7 @@ from tqdm import tqdm, tqdm_notebook
 from sklearn.metrics import mean_absolute_error
 from typing import Callable, List, Optional, Tuple, Union
 from util import Logger, Util, optimized_f1, threshold_optimization
-from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold
+from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold, load_index_custom_ts_fold
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn.model_selection import KFold
 
@@ -114,7 +114,7 @@ class Runner:
             # elif self.cv_method == 'TrainTestSplit':
             #     tr_idx, va_idx = self.load_index_train_test_split()
             elif self.cv_method == 'CustomTimeSeriesSplitter':
-                tr_idx, va_idx = self.load_index_custom_ts_fold(i_fold)
+                tr_idx, va_idx = load_index_custom_ts_fold(i_fold, train_x)
             else:
                 print('CVメソッドが正しくないため終了します')
                 sys.exit(0)
@@ -156,10 +156,10 @@ class Runner:
         学習・評価とともに、各foldのモデルの保存、スコアのログ出力についても行う
         """
         self.logger.info(f'{self.run_name} - start training cv')
-        if self.cv_method == 'KFold':
-            self.logger.info(f'{self.run_name} - cv method: {self.cv_method}')
-        elif self.cv_method == 'GroupKFold':
+        if self.cv_method == 'GroupKFold':
             self.logger.info(f'{self.run_name} - cv method: {self.cv_method} - target: {self.cv_target_column}')
+        else :
+            self.logger.info(f'{self.run_name} - cv method: {self.cv_method}')
 
         scores = [] # 各foldのscoreを保存
         va_idxes = [] # 各foldのvalidationデータのindexを保存

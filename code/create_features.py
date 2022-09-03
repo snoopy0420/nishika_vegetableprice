@@ -166,6 +166,18 @@ def get_lag_feat(all_df, wea_df, nshift):
     return all_df
 
 
+def get_time_feat(all_df):
+    """年、月、日、曜日を特徴量に追加
+    """
+    all_df["weekday"] = all_df["date"].dt.weekday
+    all_df["year"] = all_df["date"].dt.year
+    all_df["month"] = all_df["date"].dt.month
+    all_df["day"] = all_df["date"].dt.day
+
+    return all_df
+
+
+
 def get_labelencoding(all_df):
     """ラベルエンコーディング
     """
@@ -194,6 +206,7 @@ def main():
     wea = change_to_date(wea)
     df,wea = merge_wea(df,wea)
     df = get_lag_feat(df,wea,31)
+    df = get_time_feat(df)
     df = get_labelencoding(df)
     
     # trainとtestに分割

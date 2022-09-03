@@ -5,7 +5,7 @@ Nishika「生鮮野菜価格予測」
 2022/08  
 
 ## 環境
-python: 3.9
+python: 3.7.13
 
 # 手順
 
@@ -20,8 +20,7 @@ cd nishika_freshvegetableprice/code
 ```
 
 ## 実行
-### Googlecolab上で実行
-vegetable_run.ipynb
-
+```sh
+python run.py
 ```
 
