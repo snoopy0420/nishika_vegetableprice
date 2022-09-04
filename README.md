@@ -24,3 +24,4 @@ cd nishika_freshvegetableprice/code
 python run.py
 ```
 
+# パイプライン

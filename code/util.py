@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import yaml
 import joblib
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_absolute_error
 from scipy.optimize import minimize
 from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold
 
@@ -187,7 +187,10 @@ def load_index_custom_ts_fold(i_fold, train_x) -> np.array:
 
     return np.array(tr_x.index), np.array(va_x.index)
 
-# from sklearn.metrics import mean_absolute_error
-# def my_metric(param):
-#     met = mean_absolute_error(param)
-#     return met
+
+def my_metric(y_true, y_pred):
+    """
+    今回の分析で使用する評価関数
+    """
+    met = mean_absolute_error(y_true, y_pred)
+    return met

@@ -8,12 +8,13 @@ import shap
 import yaml
 from model import Model
 from tqdm import tqdm, tqdm_notebook
-from sklearn.metrics import mean_absolute_error
+# from sklearn.metrics import mean_absolute_error
 from typing import Callable, List, Optional, Tuple, Union
 from util import Logger, Util, optimized_f1, threshold_optimization
 from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold, load_index_custom_ts_fold
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn.model_selection import KFold
+from util import my_metric
 
 
 CONFIG_FILE = '../configs/config.yaml'
@@ -40,7 +41,7 @@ class Runner:
         cv: CVの設定,
         """
 
-        self.metrics = mean_absolute_error  # コンペの評価指標に応じて変更する
+        self.metrics = my_metric  # コンペの評価指標に応じて変更する
 
         self.run_name = run_name
         
