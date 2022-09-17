@@ -107,90 +107,102 @@ class Submission:
         logger.info(f'{run_name} - end create submission')
 
 
-# 閾値の最適化、評価関数
-def optimized_f1(y_true, y_pred):
-    bt = threshold_optimization(y_true, y_pred, metrics=accuracy_score)
-    score = accuracy_score(y_true, y_pred >= bt)
-    return score
+class Threshold:
 
-def threshold_optimization(y_true, y_pred, metrics=None):
-    def _opt(x):
-        if metrics is not None:
-            score = -metrics(y_true, y_pred >= x)
-        else:
-            raise NotImplementedError
+    # 評価関数
+    @classmethod
+    def optimized_f1(self, y_true, y_pred):
+        # bt = self.threshold_optimization(y_true, y_pred, metrics=accuracy_score)
+        # score = accuracy_score(y_true, y_pred >= bt)
+        bt = self.threshold_optimization(y_true, y_pred, metrics=Metric.my_metric)
+        score = Metric.my_metric(y_true, y_pred >= bt)
         return score
 
-    result = minimize(_opt, x0=np.array([0.5]), method='Nelder-Mead')
-    best_threshold = result['x'].item()
-    return best_threshold
+    # 閾値の最適化
+    @classmethod
+    def threshold_optimization(self, y_true, y_pred, metrics=None):
+
+        def _opt(x):
+            if metrics is not None:
+                score = -metrics(y_true, y_pred >= x)
+            else:
+                raise NotImplementedError
+            return score
+
+        result = minimize(_opt, x0=np.array([0.5]), method='Nelder-Mead')
+        best_threshold = result['x'].item()
+        return best_threshold
 
 
-## クロスバリデーションでのfoldを指定して対応するレコードのインデックスを返す関数
-## param  i_fold: foldの番号, return: foldに対応するレコードのインデックス
+class Validation:
+    ## クロスバリデーションでのfoldを指定して対応するレコードのインデックスを返す関数
+    ## param  i_fold: foldの番号, return: foldに対応するレコードのインデックス
+    @classmethod
+    def load_index_k_fold(self, i_fold: int, train_x, n_splits=5, shuffle=True, random_state=54) -> np.array:
+        """KFold
+        """
+        # 学習データ・バリデーションデータを分けるインデックスを返す
+        dummy_x = np.zeros(len(train_x))
+        kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        return list(kf.split(dummy_x))[i_fold]
 
-def load_index_k_fold(i_fold: int, train_x, n_splits=5, shuffle=True, random_state=54) -> np.array:
-    """KFold
-    """
-    # 学習データ・バリデーションデータを分けるインデックスを返す
-    dummy_x = np.zeros(len(train_x))
-    kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
-    return list(kf.split(dummy_x))[i_fold]
+    @classmethod
+    def load_index_gk_fold(self, i_fold, train_x, cv_target_column, n_splits=5, shuffle=True, random_state=54) -> np.array:
+        """GroupKFold
+        """
+        # cv_target_column列により分割する
+        group_data = train_x[cv_target_column]
+        unique_group_data = group_data.unique()
+
+        kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        tr_group_idx, va_group_idx = list(kf.split(unique_group_data))[i_fold]
+        # unique_group_dataをtrain/valid（学習に使うデータ、バリデーションデータ）に分割する
+        tr_groups, va_groups = unique_group_data.iloc[tr_group_idx], unique_group_data.iloc[va_group_idx]
+
+        # 各レコードのgroup_dataがtrain/validのどちらに属しているかによって分割する
+        is_tr = group_data.isin(tr_groups)
+        is_va = group_data.isin(va_groups)
+        tr_x, va_x = train_x[is_tr], train_x[is_va]
+
+        return np.array(tr_x.index), np.array(va_x.index)
+
+    @classmethod
+    def load_stratify_or_group_target(self) -> pd.Series:
+        """
+        groupKFoldで同じグループが異なる分割パターンに出現しないようにデータセットを分割したい対象カラムを取得する
+        または、StratifiedKFoldで分布の比率を維持したいカラムを取得する
+        :return: 分布の比率を維持したいデータの特徴量
+        """
+        df = pd.read_pickle(self.feature_dir_name + self.cv_target_column + '_train.pkl')
+        return pd.Series(df[self.cv_target_column])
+
+    @classmethod
+    def load_index_sk_fold(self, i_fold: int) -> np.array:
+        """StratifiedKFold
+        """
+        # 学習データ・バリデーションデータを分けるインデックスを返す
+        stratify_data = self.load_stratify_or_group_target() # 分布の比率を維持したいデータの対象
+        dummy_x = np.zeros(len(stratify_data))
+        kf = StratifiedKFold(n_splits=self.n_splits, shuffle=self.shuffle, random_state=self.random_state)
+        return list(kf.split(dummy_x, stratify_data))[i_fold]
+
+    @classmethod
+    def load_index_custom_ts_fold(self, i_fold, train_x) -> np.array:
+        """timeseries cv
+        """
+
+        tr_x = train_x[(train_x["year"]!=2021)|((train_x["year"]==2021)&(train_x["month"]<5-i_fold))]
+        va_x = train_x[(train_x["year"]==2021)&(train_x["month"]==5-i_fold)]
+
+        return np.array(tr_x.index), np.array(va_x.index)
 
 
-def load_index_gk_fold(i_fold, train_x, cv_target_column, n_splits=5, shuffle=True, random_state=54) -> np.array:
-    """GroupKFold
-    """
-    # cv_target_column列により分割する
-    group_data = train_x[cv_target_column]
-    unique_group_data = group_data.unique()
+class Metric:
 
-    kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
-    tr_group_idx, va_group_idx = list(kf.split(unique_group_data))[i_fold]
-    # unique_group_dataをtrain/valid（学習に使うデータ、バリデーションデータ）に分割する
-    tr_groups, va_groups = unique_group_data.iloc[tr_group_idx], unique_group_data.iloc[va_group_idx]
-
-    # 各レコードのgroup_dataがtrain/validのどちらに属しているかによって分割する
-    is_tr = group_data.isin(tr_groups)
-    is_va = group_data.isin(va_groups)
-    tr_x, va_x = train_x[is_tr], train_x[is_va]
-
-    return np.array(tr_x.index), np.array(va_x.index)
-
-
-def load_stratify_or_group_target(self) -> pd.Series:
-    """
-    groupKFoldで同じグループが異なる分割パターンに出現しないようにデータセットを分割したい対象カラムを取得する
-    または、StratifiedKFoldで分布の比率を維持したいカラムを取得する
-    :return: 分布の比率を維持したいデータの特徴量
-    """
-    df = pd.read_pickle(self.feature_dir_name + self.cv_target_column + '_train.pkl')
-    return pd.Series(df[self.cv_target_column])
-
-
-def load_index_sk_fold(self, i_fold: int) -> np.array:
-    """StratifiedKFold
-    """
-    # 学習データ・バリデーションデータを分けるインデックスを返す
-    stratify_data = self.load_stratify_or_group_target() # 分布の比率を維持したいデータの対象
-    dummy_x = np.zeros(len(stratify_data))
-    kf = StratifiedKFold(n_splits=self.n_splits, shuffle=self.shuffle, random_state=self.random_state)
-    return list(kf.split(dummy_x, stratify_data))[i_fold]
-
-
-def load_index_custom_ts_fold(i_fold, train_x) -> np.array:
-    """timeseries cv
-    """
-
-    tr_x = train_x[(train_x["year"]!=2021)|((train_x["year"]==2021)&(train_x["month"]<5-i_fold))]
-    va_x = train_x[(train_x["year"]==2021)&(train_x["month"]==5-i_fold)]
-
-    return np.array(tr_x.index), np.array(va_x.index)
-
-
-def my_metric(y_true, y_pred):
-    """
-    今回の分析で使用する評価関数
-    """
-    met = mean_absolute_error(y_true, y_pred)
-    return met
+    @classmethod
+    def my_metric(self, y_true, y_pred):
+        """
+        今回の分析で使用する評価関数
+        """
+        result = mean_absolute_error(y_true, y_pred)
+        return result

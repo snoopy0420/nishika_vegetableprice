@@ -10,11 +10,12 @@ from model import Model
 from tqdm import tqdm, tqdm_notebook
 # from sklearn.metrics import mean_absolute_error
 from typing import Callable, List, Optional, Tuple, Union
-from util import Logger, Util, optimized_f1, threshold_optimization
-from util import load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold, load_index_custom_ts_fold
+from util import Logger, Util, Threshold
+from util import Validation #load_index_k_fold, load_stratify_or_group_target, load_index_sk_fold, load_index_gk_fold, load_index_custom_ts_fold
+from util import Metric
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn.model_selection import KFold
-from util import my_metric
+
 
 
 CONFIG_FILE = '../configs/config.yaml'
@@ -41,7 +42,7 @@ class Runner:
         cv: CVの設定,
         """
 
-        self.metrics = my_metric  # コンペの評価指標に応じて変更する
+        self.metrics = Metric.my_metric  # コンペの評価指標に応じて変更する
 
         self.run_name = run_name
         
@@ -105,17 +106,17 @@ class Runner:
 
             # 学習データ・バリデーションデータのindexを取得
             if self.cv_method == 'KFold':
-                tr_idx, va_idx = load_index_k_fold(i_fold, train_x, self.n_splits, self.shuffle, self.random_state)
+                tr_idx, va_idx = Validation.load_index_k_fold(i_fold, train_x, self.n_splits, self.shuffle, self.random_state)
             # elif self.cv_method == 'StratifiedKFold':
             #     tr_idx, va_idx = load_index_sk_fold(i_fold)
             elif self.cv_method == 'GroupKFold':
-                tr_idx, va_idx = load_index_gk_fold(i_fold, train_x, self.cv_target_column, self.n_splits, self.shuffle, self.random_state)
+                tr_idx, va_idx = Validation.load_index_gk_fold(i_fold, train_x, self.cv_target_column, self.n_splits, self.shuffle, self.random_state)
             # elif self.cv_method == 'StratifiedGroupKFold':
             #     tr_idx, va_idx = self.load_index_sgk_fold(i_fold)
             # elif self.cv_method == 'TrainTestSplit':
             #     tr_idx, va_idx = self.load_index_train_test_split()
             elif self.cv_method == 'CustomTimeSeriesSplitter':
-                tr_idx, va_idx = load_index_custom_ts_fold(i_fold, train_x)
+                tr_idx, va_idx = Validation.load_index_custom_ts_fold(i_fold, train_x)
             else:
                 print('CVメソッドが正しくないため終了します')
                 sys.exit(0)

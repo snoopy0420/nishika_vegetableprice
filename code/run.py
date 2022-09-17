@@ -10,7 +10,7 @@ from model_lgb import ModelLGB
 from model_xgb import ModelXGB
 #from model_nn import ModelNN
 from runner import Runner
-from util import Submission, Util, threshold_optimization, optimized_f1
+from util import Submission, Util, Threshold
 import pandas as pd
 import numpy as np
 from sklearn.metrics import f1_score
@@ -96,7 +96,7 @@ def save_model_config(key_list, value_list, dir_name, run_name):
 def get_label(train_y, train_preds, preds):
     """preds.pklに保存されている確率を閾値の最適化後にラベルに変換
     """
-    bt = threshold_optimization(train_y, train_preds, optimized_f1)
+    bt = Threshold.threshold_optimization(train_y, train_preds, Threshold.optimized_f1)
     print(f"Best Threshold is {bt}")
     labels = preds >= bt
     return np.array(labels, dtype="int32")
@@ -159,7 +159,7 @@ def get_run_info():
 if __name__ == '__main__':
 
     
-######## 学習・推論 ##################################
+######## 学習・推論 ################################################
     # 使用する特徴量の指定
     # features_list.txtからコピペ、適宜取捨選択
     features = [
@@ -185,7 +185,77 @@ if __name__ == '__main__':
 'day',
     ]
 
-######## xgboost ###################################
+
+
+    ##### LightGBM #############################################################
+
+    lgb_features = features
+
+    # CV設定の読み込み
+    cv_setting = get_cv_info(random_state=86)
+
+    # run nameの設定
+    run_name = get_run_name(cv_setting, model_type="lgb")
+    dir_name = MODEL_DIR_NAME + run_name + '/'
+
+    my_makedirs(dir_name)  # runディレクトリの作成。ここにlogなどが吐かれる
+
+    # ファイルの設定を読み込む
+    file_setting = get_file_info()
+    
+    # 学習の設定を読み込む
+    run_setting = get_run_info()
+    # run_setting["hopt"] = "lgb_hopt"
+
+
+    params = {
+        "boosting_type": "gbdt",
+        "objective": "regression",
+        "metric": "mae",
+        "learning_rate": 0.3,
+        "num_leaves": 31,
+        "colsample_bytree": 0.5, # feature_fraction
+        "reg_lambda": 5,
+        "random_state": 71,
+        "num_boost_round": 5000,
+        "verbose_eval": False,
+        "early_stopping_rounds": 100,
+        'max_depth': 3,
+        "min_data_in_leaf": 20,
+        "num_leaves": 31,
+    }
+
+
+    runner = Runner(run_name, ModelLGB, lgb_features, params, file_setting, cv_setting, run_setting)
+
+    # 今回の学習で使用した特徴量名を取得
+    use_feature_name = runner.get_feature_name() 
+
+    # 今回の学習で使用したパラメータを取得
+    use_params = runner.get_params()
+
+    # モデルのconfigをjsonで保存
+    key_list = ['load_features', 'use_features', 'model_params', 'file_setting', 'cv_setting', "run_setting"]
+    value_list = [features, use_feature_name, use_params, file_setting, cv_setting, run_setting]
+    save_model_config(key_list, value_list, dir_name, run_name)
+    
+    # 学習
+    if cv_setting.get('method') == 'None':
+        runner.run_train_all()  # 全データで学習
+        runner.run_predict_all()  # 予測
+    else:
+        runner.run_train_cv()  # 学習
+        ModelLGB.calc_feature_importance(dir_name, run_name, use_feature_name)  # feature_importanceを計算
+        ModelLGB.plot_learning_curve(run_name)  # learning curveを描画
+        runner.run_predict_cv()  # 予測
+
+    # submissionファイルの作成
+    lgb_preds = Util.load_df_pickle(dir_name + f'{run_name}-pred.pkl')
+    Submission.create_submission(run_name, dir_name, lgb_preds)  # submit作成
+
+
+
+######## xgboost ###############################################
  
     # # 特徴量
     # xgb_features = features
@@ -258,71 +328,6 @@ if __name__ == '__main__':
 
     
 
-##### LightGBM #############################################################
-
-    lgb_features = features
-
-    # CV設定の読み込み
-    cv_setting = get_cv_info(random_state=86)
-
-    # run nameの設定
-    run_name = get_run_name(cv_setting, model_type="lgb")
-    dir_name = MODEL_DIR_NAME + run_name + '/'
-
-    my_makedirs(dir_name)  # runディレクトリの作成。ここにlogなどが吐かれる
-
-    # ファイルの設定を読み込む
-    file_setting = get_file_info()
-    
-    # 学習の設定を読み込む
-    run_setting = get_run_info()
-    # run_setting["hopt"] = "lgb_hopt"
-
-
-    params = {
-        "boosting_type": "gbdt",
-        "objective": "regression",
-        "metric": "mae",
-        "learning_rate": 0.3,
-        "num_leaves": 31,
-        "colsample_bytree": 0.5, # feature_fraction
-        "reg_lambda": 5,
-        "random_state": 71,
-        "num_boost_round": 5000,
-        "verbose_eval": False,
-        "early_stopping_rounds": 100,
-        'max_depth': 3,
-        "min_data_in_leaf": 20,
-        "num_leaves": 31,
-    }
-
-
-    runner = Runner(run_name, ModelLGB, lgb_features, params, file_setting, cv_setting, run_setting)
-
-    # 今回の学習で使用した特徴量名を取得
-    use_feature_name = runner.get_feature_name() 
-
-    # 今回の学習で使用したパラメータを取得
-    use_params = runner.get_params()
-
-    # モデルのconfigをjsonで保存
-    key_list = ['load_features', 'use_features', 'model_params', 'file_setting', 'cv_setting', "run_setting"]
-    value_list = [features, use_feature_name, use_params, file_setting, cv_setting, run_setting]
-    save_model_config(key_list, value_list, dir_name, run_name)
-    
-    # 学習
-    if cv_setting.get('method') == 'None':
-        runner.run_train_all()  # 全データで学習
-        runner.run_predict_all()  # 予測
-    else:
-        runner.run_train_cv()  # 学習
-        ModelLGB.calc_feature_importance(dir_name, run_name, use_feature_name)  # feature_importanceを計算
-        ModelLGB.plot_learning_curve(run_name)  # learning curveを描画
-        runner.run_predict_cv()  # 予測
-
-    # submissionファイルの作成
-    lgb_preds = Util.load_df_pickle(dir_name + f'{run_name}-pred.pkl')
-    Submission.create_submission(run_name, dir_name, lgb_preds)  # submit作成
 
 
 # ##### ニューラルネットワーク ###########################################################
