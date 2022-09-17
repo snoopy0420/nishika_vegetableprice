@@ -135,8 +135,11 @@ class Threshold:
 
 
 class Validation:
+
     ## クロスバリデーションでのfoldを指定して対応するレコードのインデックスを返す関数
-    ## param  i_fold: foldの番号, return: foldに対応するレコードのインデックス
+    ## param  
+    ## i_fold: foldの番号, return: foldに対応するレコードのインデックス
+
     @classmethod
     def load_index_k_fold(self, i_fold: int, train_x, n_splits=5, shuffle=True, random_state=54) -> np.array:
         """KFold
@@ -188,7 +191,7 @@ class Validation:
 
     @classmethod
     def load_index_custom_ts_fold(self, i_fold, train_x) -> np.array:
-        """timeseries cv
+        """カスタム時系列バリデーション
         """
 
         tr_x = train_x[(train_x["year"]!=2021)|((train_x["year"]==2021)&(train_x["month"]<5-i_fold))]

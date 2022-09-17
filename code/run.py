@@ -92,7 +92,7 @@ def save_model_config(key_list, value_list, dir_name, run_name):
     json_file = open(dir_name + run_name  + '_param.json', 'w', encoding="utf-8")
     json.dump(conf_dict, json_file, indent=4, default=set_default, ensure_ascii=False)
 
-
+# この関数はutilのThresholdクラスに移動させる。
 def get_label(train_y, train_preds, preds):
     """preds.pklに保存されている確率を閾値の最適化後にラベルに変換
     """
